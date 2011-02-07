@@ -12,7 +12,7 @@ require 'mink/managers/auth_repl_set_manager'
 require 'mink/managers/sharding_manager'
 
 module Mink
-  VERSION = "0.1"
+  VERSION = "0.1.1"
 end
 
 if Config::CONFIG['host_os'] =~ /mswin|windows/i
