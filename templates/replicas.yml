@@ -1,0 +1,14 @@
+--- 
+# Note: this assumes that mongod is in your path by default
+:mongod_path: mongod
+
+# Whether to enable single-server durability (1.7.5+)
+:durability: false
+
+# Each shard will consist of one replica set.
+:replica_set_config:
+  :replica_count: 2
+  :arbiter_count: 1
+  :passive_count: 0
+  :name: "test-rs"
+  :start_port: 30000

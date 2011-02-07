@@ -1,0 +1,160 @@
+#!/usr/bin/ruby
+
+$:.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
+require "rubygems"
+require "fileutils"
+require "yaml"
+require "mink"
+
+module Mink
+  module Bin
+    extend self
+
+    VALID_CONFIGS = ["replicas", "shards"]
+    TEMPLATE_BASE = File.join(File.dirname(__FILE__), '..', 'templates')
+    CONFIG_NAME   = "mink.yml"
+
+    def init
+      load_config
+      check_mongod
+
+      if @config[:shards]
+        init_shards
+      else
+        init_replicas
+      end
+    end
+
+    def init_shards
+      m = Mink::ShardingManager.new(shard_config)
+      m.start_cluster
+    end
+
+    def init_replicas
+      m = Mink::ReplSetManager.new(replica_set_config)
+      m.start_set
+    end
+
+    def shard_config
+      config = @config[:shards]
+
+      { :shard_count => config[:shard_count],
+        :mongos_count => config[:mongos_count],
+        :mongos_start_port => config[:mongos_start_port],
+        :config_server_start_port => config[:config_server_start_port],
+        :config_server_count => config[:config_server_count],
+        :shard_database => config[:shard_database],
+        :shard_collection => config[:shard_collection],
+        :shard_key => config[:shard_key],
+        :working_dir => Dir.pwd,
+        :durable => @config[:durability],
+        :replica_set_config => replica_set_config
+      }
+    end
+
+    def replica_set_config
+      config = @config[:replica_set_config]
+
+      { :replica_count => config[:replica_count],
+        :arbiter_count => config[:arbiter_count],
+        :passive_count => config[:passive_count],
+        :name          => config[:name],
+        :start_port    => config[:start_port],
+        :mongod_path   => @mongod_path,
+        :working_dir   => Dir.pwd,
+        :durable       => @config[:durability]
+      }
+    end
+
+    def clean
+      system("killall mongod")
+      system("killall mongos")
+      FileUtils.rm_rf(config_path)
+      system("rm -rf #{File.join(Dir.pwd, "*.data")}")
+      system("rm -rf #{File.join(Dir.pwd, "*.log")}")
+    end
+
+    def write_config(name=nil)
+      if VALID_CONFIGS.include?(name)
+        config_source = File.join(TEMPLATE_BASE, name + ".yml")
+        FileUtils.cp(config_source, config_path)
+STDOUT << <<END_OF_NEXT_STEPS
+
+You've just created a mink config file at #{config_path}. Feel free to edit it.
+When you're ready to start the MongoDB cluster, enter
+
+  mink init
+
+END_OF_NEXT_STEPS
+      else
+        usage
+      end
+    end
+
+    def usage
+STDERR << <<END_OF_USAGE
+usage:  mink COMMAND
+
+Mink sets up MongoDB clusters on localhost. Good for testing and experimenting,
+but definitely NOT FOR PRODUCTION USE.
+
+  make        Creates a default config file for the specified cluster type. You have two choices:
+
+                replicas       Default config for a replica set with replica sets as shards
+                shards         Default config for a stand-alone replica set
+
+  init        Starts the MongoDB cluster whose configuration is specified in
+              the mink.yml config file from the current directory.
+
+  clean       Kill every running mongod and mongos. Delete mink.yml, all config files, and all data files.
+              Note: use this with caution! You may want to do this manually.
+
+example:
+
+  mink make replicas
+  mink init
+
+END_OF_USAGE
+    end
+
+    def load_config
+      config_filename = File.join(Dir.pwd, CONFIG_NAME)
+      if File.exists?(config_filename)
+        @config = YAML.load(File.open(config_filename, "r").read)
+      else
+        STDERR << "\nERROR: Can't find mink.yml in current folder!\nYou may need to run mink make\n\n"
+        usage
+        exit
+      end
+    end
+
+    def check_mongod
+      mongod_path = @config.fetch(:mongod_path, "")
+      if mongod_path.strip.length == 0 || !system(mongod_path + " --version")
+        raise ArgumentError, "mongod not found! Please check your mongod path in #{CONFIG_NAME}"
+      end
+    end
+
+    def config_path
+      File.join(Dir.pwd, CONFIG_NAME)
+    end
+
+  end
+end
+
+if ARGV.empty? || ARGV[0] == "-h"
+    Mink::Bin.usage
+    exit
+else
+    case ARGV[0]
+      when "make" then
+        Mink::Bin.write_config(ARGV[1])
+      when "init" then
+        Mink::Bin.init
+      when "clean" then
+        Mink::Bin.clean
+      else
+        Mink::Bin.usage
+        exit
+      end
+end

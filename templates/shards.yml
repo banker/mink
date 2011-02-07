@@ -1,0 +1,32 @@
+--- 
+# Note: this assumes that mongod and mongos are in your defaul path
+:mongod_path: mongod
+:mongos_path: mongos
+
+# Whether to enable single-server durability (1.7.5+)
+:durability: false
+
+# Shard configuration
+:shards:
+  :shard_count: 2
+
+  # Mongos servers
+  :mongos_start_port: 50000
+  :mongos_count: 1
+
+  # Config servers
+  :config_server_start_port: 40000
+  :config_server_count: 1
+
+  # Pick the collection to shard, along with the shard key
+  :shard_database: "app"
+  :shard_collection: "photos"
+  :shard_key: { photo_ts_id: 1 }
+
+# Each shard will consist of one replica set.
+:replica_set_config:
+  :replica_count: 2
+  :arbiter_count: 1
+  :passive_count: 0
+  :name: "test-rs"
+  :start_port: 30000
