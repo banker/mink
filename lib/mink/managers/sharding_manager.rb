@@ -50,18 +50,21 @@ module Mink
       add_shards
       enable_sharding
       if shard_collection
-        STDOUT << "Shard cluster initiated!\nEnter the following to connect:\n  mongo localhost:#{@mongos_port}"
+        STDOUT << "\nShard cluster initiated!\nEnter the following to connect:\n  mongo localhost:#{@mongos_port}\n\n"
       end
     end
 
     def enable_sharding
-      mongos['admin'].command({:enablesharding => @shard_db})
+      cmd = {:enablesharding => @shard_db}
+      STDOUT << "Command: #{cmd.inspect}\n"
+      mongos['admin'].command(cmd)
     end
 
     def shard_collection
       cmd = BSON::OrderedHash.new
       cmd[:shardcollection] = "#{@shard_db}.#{@shard_coll}"
       cmd[:key] = {:tid => 1}
+      STDOUT << "Command: #{cmd.inspect}\n"
       mongos['admin'].command(cmd)
     end
 
@@ -69,6 +72,7 @@ module Mink
       @shards.each do |shard|
         cmd = {:addshard => shard.shard_string}
         cmd
+        STDOUT << "Command: #{cmd.inspect}\n"
         p mongos['admin'].command(cmd)
       end
       p mongos['admin'].command({:listshards => 1})
@@ -189,7 +193,7 @@ module Mink
     def start(set, node)
       system(set[node]['start'])
       set[node]['up'] = true
-      sleep(0.5)
+      sleep(0.75)
       set[node]['pid'] = File.open(File.join(set[node]['db_path'], 'mongod.lock')).read.strip
     end
     alias :restart :start

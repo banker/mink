@@ -32,7 +32,7 @@ module Mink
     end
 
     def start_set
-      puts "** Starting a replica set with #{@count} nodes"
+      puts "[RS #{@name}] Starting a replica set with #{@count} nodes\n"
       kill_existing_mongods
 
       n = 0
@@ -159,7 +159,7 @@ module Mink
         print "."
         if status['members'].all? { |m| m['health'] == 1 && [1, 2, 7].include?(m['state']) } &&
            status['members'].any? { |m| m['state'] == 1 }
-          print "all members up!\n\n"
+          print "[RS #{@name}] all members up!\n"
           return status
         else
           raise Mongo::OperationFailure

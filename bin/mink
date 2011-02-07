@@ -129,8 +129,8 @@ END_OF_USAGE
     end
 
     def check_mongod
-      mongod_path = @config.fetch(:mongod_path, "")
-      if mongod_path.strip.length == 0 || !system(mongod_path + " --version")
+      @mongod_path = @config.fetch(:mongod_path, "")
+      if @mongod_path.strip.length == 0 || !system(@mongod_path + " --version")
         raise ArgumentError, "mongod not found! Please check your mongod path in #{CONFIG_NAME}"
       end
     end
