@@ -10,7 +10,7 @@ module Mink
   module Bin
     extend self
 
-    VALID_CONFIGS = ["replicas", "shards"]
+    VALID_CONFIGS = ["rs", "shards"]
     TEMPLATE_BASE = File.join(File.dirname(__FILE__), '..', 'templates')
     CONFIG_NAME   = "mink.yml"
 
@@ -100,8 +100,8 @@ but definitely NOT FOR PRODUCTION USE.
 
   make        Creates a default config file for the specified cluster type. You have two choices:
 
-                replicas       Default config for a replica set with replica sets as shards
-                shards         Default config for a stand-alone replica set
+                rs         Default config for a stand-alone replica set
+                shards     Default config for a sharded cluster with replica sets as shards
 
   init        Starts the MongoDB cluster whose configuration is specified in
               the mink.yml config file from the current directory.
